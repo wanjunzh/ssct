@@ -1,0 +1,137 @@
+#!/usr/bin/env python3
+
+'''
+A wrapper tool for shadowsocks to consistently bypass firewalls.
+'''
+
+import re
+import sys
+import requests
+import argparse
+from subprocess import check_call, CalledProcessError
+
+
+parser = argparse.ArgumentParser(description='A wrapper tool for shadowsocks to consistently bypass firewalls.', formatter_class=argparse.RawTextHelpFormatter, add_help=True, epilog='Connect to the available server automatically without any argument.')
+ssctoptions = parser.add_argument_group('ssct options')
+ssctoptions.add_argument('-n', dest='num', metavar='<num>', type=int, default=0, help='connect server number')
+ssctoptions.add_argument('--ss', dest='ss', metavar='<ss>', default='sslocal', help='path to shadowsocks, assumed in the PATH')
+ssctoptions.add_argument('--list', action='store_true', help='list all ss servers')
+ssctoptions.add_argument('--stop', action='store_true', help='stop running servers')
+# ssctoptions.add_argument('-x', action='store_true', help='set system socks proxy')
+ssctoptions.add_argument('--version', action='version', version='%(prog)s 0.5.0')
+ssctoptions.add_argument('--morehelp', action='store_true', help='show this help message and exit')
+ssoptions = parser.add_argument_group('shadowsocks options')
+ssoptions.add_argument('-c', dest='config', metavar='<config>', type=argparse.FileType(), help='path to config file')
+ssoptions.add_argument('-s', dest='server_addr', metavar='<addr>', help='server address, auto crawl online')
+ssoptions.add_argument('-p', dest='server_port', metavar='<port>', type=int, help='server port, auto crawl online')
+ssoptions.add_argument('-b', dest='local_addr', metavar='<addr>', default='127.0.0.1', help='local binding address [default: %(default)s]')
+ssoptions.add_argument('-l', dest='local_port', metavar='<port>', type=int, default=1080, help='local port [default: %(default)s]')
+ssoptions.add_argument('-k', dest='password', metavar='<password>', help='password, auto crawl online')
+ssoptions.add_argument('-m', dest='method', metavar='<method>', help='encryption method, auto crawl online')
+ssoptions.add_argument('-t', dest='timeout', metavar='<timeout>', type=int, default=300, help='timeout in seconds [default: %(default)s]')
+ssoptions.add_argument('--fast-open', action='store_true', help='use TCP_FASTOPEN, requires Linux 3.7+')
+ssoptions.add_argument('-d', dest='daemon', metavar='<daemon>', choices=['start', 'stop', 'restart'], help='daemon mode, one of start, stop and restart')
+ssoptions.add_argument('--pid-file', dest='pidfile', metavar='<file>', type=argparse.FileType('w'), help='pid file for daemon mode')
+ssoptions.add_argument('--log-file', dest='logfile', metavar='<file>', type=argparse.FileType('w'), help='log file for daemon mode')
+ssoptions.add_argument('--user', dest='user', metavar='<user>', help='username to run as')
+ssoptions.add_argument('-v', '-vv', action='store_true', help='verbose mode')
+ssoptions.add_argument('-q', '-qq', action='store_true', help='quiet mode, only show warnings/errors')
+args = parser.parse_args()
+args.morehelp and sys.exit(parser.print_help())  # to preserve compatibility with old version
+
+
+class Shadowsocks(object):
+
+    def __init__(self):
+        self.url = 'http://ss.ishadowx.com'
+        self.servers = self.crawl_servers(self.url)
+
+    def crawl_servers(self, url):
+        r = requests.get(url, headers={'User-Agent': 'Baiduspider+'})
+        r.encoding = 'utf-8'
+        servers = []
+        data = [re.match('<', re.split('[:：]', x)[1]) and (re.search('>(.*?)<', re.split('[:：]', x)[1], re.S).group(1) or ' ') or re.split('[:：]', x)[1] for x in re.findall('<h4>(.*?)</h4>', r.text, re.S) if not re.match('auth|<', x)]
+        for i in range(0, len(data), 4):
+            servers.append([data[i + j].strip() for j in range(4)])
+        return servers
+
+    def list_servers(self):
+        try:
+            from prettytable import PrettyTable
+            table = PrettyTable('Num Server Port Password Method'.split())
+            for i, server in enumerate(self.servers):
+                table.add_row([i + 1] + [server[i] for i in range(4)])
+            print(table)
+        except ImportError:
+            print('\033[1;34m{:6}{:16}{:12}{:12}{:12}\033[0m'.format('Num', 'Server', 'Port', 'Password', 'Method'))
+            for i, server in enumerate(self.servers):
+                print('{:6}{:16}{:12}{:12}{:12}'.format(*[str(i + 1)] + [server[i] for i in range(4)]))
+
+    def connect(self, ssopt, num=0):
+        if not num:
+            num = 1
+            while num <= len(self.servers) and not self.servers[num - 1][2]:
+                num += 1
+            if num > len(self.servers):
+                sys.exit('\033[1;31mError:\033[0m all servers are temporarily unavailable.')
+        elif num > len(self.servers) or num < 0:
+            sys.exit('\033[1;31mError:\033[0m illegal server number: {}'.format(num))
+        elif not self.servers[num - 1][2]:
+            sys.exit('\033[1;31mError:\033[0m this server is temporarily unavailable.\nTry \'--list\' for more available servers.')
+        try:
+            sss = '{} -s {} -p {} -k {} -m {} {}'.format(args.ss, self.servers[num - 1][0], self.servers[num - 1][1], self.servers[num - 1][2], self.servers[num - 1][3], ssopt)
+            print(sss)
+            try:
+                check_call(sss, shell=True)
+            except CalledProcessError:
+                sys.exit()
+        except KeyboardInterrupt:
+            sys.exit('\nKeyboard interrupt received, exiting.')
+        except Exception as e:
+            sys.exit(e)
+
+
+def get_ssopt(args):
+    ssopt = ''
+    ssopt += args.config and '-c {} '.format(args.config.name) or ''
+    ssopt += args.server_addr and '-s {} '.format(args.server_addr) or ''
+    ssopt += args.server_port and '-p {} '.format(args.server_port) or ''
+    ssopt += '-b {} '.format(args.local_addr)
+    ssopt += '-l {} '.format(args.local_port)
+    ssopt += args.password and '-k {} '.format(args.password) or ''
+    ssopt += args.method and '-m {} '.format(args.method) or ''
+    ssopt += '-t {} '.format(args.timeout)
+    ssopt += args.fast_open and '--fast-open ' or ''
+    ssopt += args.daemon and '-d {} '.format(args.daemon) or ''
+    ssopt += args.pidfile and '--pid-file {} '.format(args.pidfile.name) or ''
+    ssopt += args.logfile and '--log-file {}'.format(args.logfile.name) or ''
+    ssopt += args.user and '--user {} '.format(args.user) or ''
+    ssopt += args.v and '-v ' or ''
+    ssopt += args.q and '-q ' or ''
+    return ssopt
+
+
+if __name__ == '__main__':
+    ssopt = get_ssopt(args)
+    if args.list:
+        Shadowsocks().list_servers()
+    elif args.stop:
+        try:
+            check_call(['killall', args.ss])
+        except CalledProcessError:
+            sys.exit()
+    elif set(ssopt.split()).intersection({'-c', '-s', '-p', '-k', '-m'}):
+        if '-c' in ssopt or '-s' in ssopt and '-k' in ssopt:
+            try:
+                check_call('{} {}'.format(args.ss, ssopt), shell=True)
+            except CalledProcessError:
+                sys.exit()
+        elif not set(ssopt.split()).intersection({'-c', '-s', '-k'}):
+            sys.exit('\033[1;31mError:\033[0m config not specified\nTry \'--morehelp\' for more information.')
+        elif '-s' not in ssopt:
+            sys.exit('\033[1;31mError:\033[0m server addr not specified\nTry \'--morehelp\' for more information.')
+        elif '-k' not in ssopt:
+            sys.exit('\033[1;31mError:\033[0m password not specified\nTry \'--morehelp\' for more information.')
+    else:
+        num = args.num and int(args.num) or 0
+        Shadowsocks().connect(ssopt, num)
