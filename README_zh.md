@@ -9,23 +9,23 @@
 
 ### 自动连接
 
-直接在终端执行`ssct`，`ssct`会自动从 [ishadowsocks](http://ss.ishadowx.com) 获取服务器信息并自动连接。
+直接在终端执行`ssct`，`ssct`会自动从 [ishadowsocks](https://global.ishadowx.net) 获取服务器信息并自动连接。
 
-### 连接特定服务器
+### 连接指定服务器
 
-首先获取可用的服务器信息。
+首先获取可用的服务器信息
 
 ```
 ssct --list
 ```
 
-然后连接特定服务器。
+然后连接指定服务器
 
 ```
 ssct -n 5
 ```
 
-另外，也可以连接已有的其它服务器。
+另外，也可连接其它已知服务器
 
 ```
 ssct -s <server_addr> -p <server_port> -l <local_port> -k <password> -m <method>
@@ -35,44 +35,30 @@ ssct -s <server_addr> -p <server_port> -l <local_port> -k <password> -m <method>
 
 ### 依赖解决
 
-1 安装 shadowsocks
+1 安装必选模块
 
 ```
-# for python2
-pip install shadowsocks
-# for python3
 pip3 install shadowsocks
-```
-
-**Note:** shadowsocks 也可以通过系统包管理器安装 (apt, yum, dnf, etc) 或者安装 chrome app 版本 [shadowsocks](https://chrome.google.com/webstore/detail/shadowsocks/fnhhahhihediajgefcnlpdmnogndblbi?utm_source=chrome-app-launcher-info-dialog)。但 chrome app 版本需手动填写服务器信息。
-
-2 安装 python3 模块
-
-```
 pip3 install requests
+```
+
+2 安装可选模块
+
+```
 pip3 install prettytable
 ```
 
 **Note:** `prettytable`模块不是必须，但会使`--list`显示结果更友好。
 
-### 谷歌浏览器配置
+### 浏览器配置
 
-1. 安装扩展程序 [SwitchyOmega](https://chrome.google.com/webstore/detail/proxy-switchyomega/padekgcemlokbadohgkifijomclgjgif)。
+1. 安装扩展程序 Proxy SwitchyOmega ([Chrome版](https://chrome.google.com/webstore/detail/proxy-switchyomega/padekgcemlokbadohgkifijomclgjgif)、[Firefox版](https://addons.mozilla.org/en-US/firefox/addon/switchyomega/))。
 2. 打开 SwitchyOmega 选项并作如下配置。
 ![set switchyomega proxy](img/config-swithyomega.png)
 3. 获取所有服务器信息并连接，也可以通过`ssct`自动连接。
 ![start ssct](img/start-ssct.png)
-4. 在谷歌浏览器中选择 proxy 代理。  
+4. 以 Chrome 为例，在浏览器中选择 proxy 代理。  
 ![select proxy option](img/chrome-proxy.png)
-
-### 火狐浏览器配置
-
-1. 安装扩展程序 [AutoProxy](https://addons.mozilla.org/en-us/firefox/addon/autoproxy)。
-2. 打开 AotoProxy 选项，编辑服务器信息并添加 shadowsocks。
-![edit proxy server](img/edit-autoproxy-server.png)
-3. 启动 ssct 并选择 shadowsocks 代理。
-
-**Note:** 关于 AutoProxy，[更多帮助信息](https://autoproxy.org/getting_started)。
 
 ## 更多参数
 
@@ -82,11 +68,8 @@ optional arguments:
 
 ssct options:
   -n <num>           connect server number
-  --ss <ss>          path to shadowsocks, assumed in the PATH
   --list             list all ss servers
-  --stop             stop running servers
   --version          show program's version number and exit
-  --morehelp         show this help message and exit
 
 shadowsocks options:
   -c <config>        path to config file

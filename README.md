@@ -7,7 +7,7 @@ A wrapper tool for [shadowsocks](https://github.com/shadowsocks/shadowsocks) to 
 
 ## Quick start
 ### Automatically connect
-The easiest way to run this tool is just type `ssct` in terminal, and ssct will acquire available shadowsocks servers from [ishadowsocks](http://ss.ishadowx.com) and connect to it automatically.
+The easiest way to run this tool is just type `ssct` in terminal, and ssct will acquire available shadowsocks servers from [ishadowsocks](https://global.ishadowx.net) and connect to it automatically.
 
 ### Connect to a specific server
 
@@ -33,44 +33,30 @@ ssct -s <server_addr> -p <server_port> -l <local_port> -k <password> -m <method>
 
 ### Requirements
 
-1 Install shadowsocks
+1 Install shadowsocks and requests (Required)
 
 ```
-# for python2
-pip install shadowsocks
-# for python3
 pip3 install shadowsocks
-```
-
-**Note:** You can also install shadowsocks with system package manager (apt, yum, dnf, etc) or just chrome app version [shadowsocks](https://chrome.google.com/webstore/detail/shadowsocks/fnhhahhihediajgefcnlpdmnogndblbi?utm_source=chrome-app-launcher-info-dialog). However, the chrom app version can't connect automatically.
-
-2 Install python3 modules
-
-```
 pip3 install requests
+```
+
+2 Install prettytable (Optional)
+
+```
 pip3 install prettytable
 ```
 
 **Note:** The module `prettytable` is optional, but would be better if installed.
 
-### Configuration for google chrome
+### Configuration for chrome and firefox
 
-1. Install chrome extension [SwitchyOmega](https://chrome.google.com/webstore/detail/proxy-switchyomega/padekgcemlokbadohgkifijomclgjgif).
+1. Install extension Proxy SwitchyOmega ([Chrome version](https://chrome.google.com/webstore/detail/proxy-switchyomega/padekgcemlokbadohgkifijomclgjgif), [Firefox version](https://addons.mozilla.org/en-US/firefox/addon/switchyomega/)).
 2. Open the options of SwitchyOmega, and configure as below.  
 ![set switchyomega proxy](img/config-swithyomega.png)
 3. List servers and select one to connect, or just type `ssct` to connect automatically.
 ![start ssct](img/start-ssct.png)
-4. Select proxy option in chrome and enjoy it.
+4. Select proxy option in chrome or firefox and enjoy it.
 ![select proxy option](img/chrome-proxy.png)
-
-### Configuration for firefox
-
-1. Install firefox extension [AutoProxy](https://addons.mozilla.org/en-us/firefox/addon/autoproxy).
-2. AotoProxy preferences: Proxy Server --> Edit proxy server, and add shadowsocks item.
-![edit proxy server](img/edit-autoproxy-server.png)
-3. Start ssct and select the shadowsocks proxy.  
-
-**Note:** For detail help [here](https://autoproxy.org/getting_started).
 
 ## More options
 
@@ -80,11 +66,8 @@ optional arguments:
 
 ssct options:
   -n <num>           connect server number
-  --ss <ss>          path to shadowsocks, assumed in the PATH
   --list             list all ss servers
-  --stop             stop running servers
   --version          show program's version number and exit
-  --morehelp         show this help message and exit
 
 shadowsocks options:
   -c <config>        path to config file
